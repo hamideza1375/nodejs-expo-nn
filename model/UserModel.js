@@ -8,7 +8,7 @@ const UserModel = new mongoose.Schema({
   phone: { type: String, required: true, unique: true, },
   password: { type: String, required: true, minlength: 4, maxlength: 100 },
   isAdmin: { type: String, default: '' },
-  CommentPermission: { type: Array },
+  CommentPermission: { type: Array ,default: []},
 });
 
 

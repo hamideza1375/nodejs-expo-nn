@@ -1,212 +1,126 @@
-var fs = require('fs');
 const sharp = require("sharp");
-const shortId = require("shortid");
 const appRoot = require("app-root-path");
-const { FoodModel, ChildFoodModel } = require('../model/FoodModel');
-const { FoodSchema, ChildFoodSchema } = require('../validator/FoodSchema');
+const { FoodModel } = require('../model/FoodModel');
+const UserModel = require('../model/UserModel');
+const NotifeeModel = require('../model/NotifeeModel');
+const { CommentSchema, ConfirmPaymentShama } = require('../validator/FoodSchema');
 const nodeGeocoder = require('node-geocoder');
 const PaymentModel = require('../model/PaymentModel');
 const ZarinpalCheckout = require('zarinpal-checkout');
 const zarinpal = ZarinpalCheckout.create('00000000-0000-0000-0000-000000000000', true);
-
-
-
-
+const { imageProfile } = require('../model/ImageProfile');
+const AddressModel = require('../model/AddressModel');
+let change = new Map();
 
 
 class FoodController {
 
-
-  async createFood(req, res) {
-    try {
-      await FoodSchema.validate(req.body)
-      const image = req.files ? req.files.imageUrl : {};
-      const fileName = `${shortId.generate()}_${image.name}`;
-      await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-      const food = await new FoodModel({ title: req.body.title, imageUrl: fileName }).save();
-      res.status(200).send({ food })
-    } catch (err) {
-
-      console.log(err);
-    }
-  }
-
-
-
-
-
-
-
   async getFoods(req, res) {
     try {
       let food = await FoodModel.find()
-      res.status(200).send(food);
+      res.status(200).json(food);
     } catch (err) {
-
     }
   }
 
 
-
-
-
-
-
-  async editFood(req, res) {
+  async getSingleTitleFoods(req, res) {
     try {
-      const food = await FoodModel.findById(req.params.id);
-      const { title } = req.body
-
-      let fileName = ""
-      if (req.files.imageUrl) {
-        const image = req.files.imageUrl;
-        fileName = `${shortId.generate()}_${image.name}`;
-        await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-        fs.unlinkSync(`${appRoot}/public/upload/${food.imageUrl}`)
-      } else fileName = food.imageUrl
-
-      food.title = title;
-      food.imageUrl = fileName;
-      await food.save();
-      res.status(200).json({ food })
-    }
-    catch (err) { console.log(err) }
-  }
-
-
-
-
-  async deleteFood(req, res) {
-    try {
-      const food = await FoodModel.findById(req.params.id);
-      const del = await FoodModel.findByIdAndRemove(req.params.id)
-      fs.unlinkSync(`${appRoot}/public/upload/${food.imageUrl}`)
-      res.status(200).send({ food });
+      let food = await FoodModel.findById(req.params.id)
+      res.status(200).json(food);
     } catch (err) {
-
-    }
-  }
-
-
-
-
-  // ! ChildFood
-  // ! ChildFood
-
-
-
-
-  async createChildFood(req, res) {
-    try {
-      await ChildFoodSchema.validate(req.body)
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const { title, price, info } = req.body
-      const image = req.files ? req.files.imageUrl : {};
-      const fileName = `${shortId.generate()}_${image.name}`;
-      await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-      food.childFood.push({ title, price, info, imageUrl: fileName, commentId: req.params.id });
-      food.save()
-      res.status(200).send(food.childFood)
-    } catch (err) {
-
       console.log(err);
     }
   }
 
 
+  async getFood(req, res) {
+    try {
+      let food = await FoodModel.find(req.params.id)
+      res.status(200).json(food);
+    } catch (err) {
+
+    }
+  }
 
 
   async getAllChildFood(req, res) {
     try {
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const child = food.childFood
-      res.status(200).send({ child })
+      const food = await FoodModel.find()
+      const child = []
+      for (let n of food) {
+        for (let i of n.childFood) {
+          child.push(i);
+        }
+      }
+      res.status(200).json({ child })
     } catch (err) {
-
       console.log(err);
     }
   }
-
-
 
 
   async getSingleChildFood(req, res) {
     try {
+      const user = req.user?.payload ? await UserModel.findById({ _id: req.user.payload.userId }) : {}
       const food = await FoodModel.findById({ _id: req.params.id })
       const child = food.childFood.find((f) => f._id == req.query.id)
-      res.status(200).send({ child })
+      let permission = user?.CommentPermission ? user.CommentPermission.find((f) => (f == child._id)) : false
+      res.status(200).json({ child, permission })
     } catch (err) {
-
       console.log(err);
     }
   }
 
 
-
-
-
-  async editChildFood(req, res) {
-    try {
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const child = food.childFood.find((f) => f._id == req.query.id)
-      const { title, price, info } = req.body
-      let fileName = ""
-      if (req.files.imageUrl) {
-        const image = req.files.imageUrl;
-        fileName = `${shortId.generate()}_${image.name}`;
-        await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-        fs.unlinkSync(`${appRoot}/public/upload/${child.imageUrl}`)
-      } else fileName = child.imageUrl
-      child.title = title;
-      child.price = price;
-      child.info = info;
-      child.imageUrl = fileName;
-      await food.save();
-      res.status(200).json({ childFood: child })
-    }
-    catch (err) { console.log(err) }
-  }
-
-
-
-
-  async deleteChildFood(req, res) {
-    try {
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const child = food.childFood.find((f) => f._id == req.query.id)
-      const delChild = food.childFood.filter((f) => f._id != req.query.id)
-      food.childFood = delChild
-      food.save()
-      fs.unlinkSync(`${appRoot}/public/upload/${child.imageUrl}`)
-      res.status(200).send({ childFood });
-    } catch (err) {
-
-    }
-  }
-
-
-
-
   async createCommentChildFood(req, res) {
     try {
-      const { fullname, email, message } = req.body;
+
+
+
+      if(us) us.imageUrl = imageUrl
+      const validate = await CommentSchema.validate(req.body)
+      if(!validate) return res.status(400).send('err')
+      if(!req.user) return res.status(400).send('err')
+      const { message, allstar, starId, fullname, imageUrl, id } = req.body;
+      const user = await UserModel.findById({ _id: req.user.payload.userId })
+      console.log('user?.CommentPermission', user.CommentPermission);
+      let uc = user && user.CommentPermission ? user.CommentPermission.find((uc) => uc === id) : null
+      if (!uc && (req.user.payload.isAdmin !== 'chief')) return res.status(400).json('err')
       const food = await FoodModel.findById({ _id: req.params.id })
       const child = food.childFood.find((f) => f._id == req.query.id)
-      child.comment.push({ fullname, email, message });
-      food.save()
-      res.status(200).send({ ...child.comment })
+      let find = child.comment.findIndex((c) => (c.starId == req.user.payload.userId))
+      if (!child.comment[find]) {
+        child.comment.push({ message, allstar, starId, fullname, imageUrl })
+        food.save()
+      }
+      else {
+        child.comment[find].message = message
+        child.comment[find].allstar = allstar
+        food.save()
+      }
+      res.status(200).json({ ...child.comment })
     } catch (err) {
-
+      console.log(err);
     }
   }
-
-
 
 
   async getCommentChildFood(req, res) {
     try {
       const food = await FoodModel.findById({ _id: req.params.id })
       const child = food.childFood.find((f) => f._id == req.query.id)
+      let m = []
+      let index = null
+      child.comment.length && child.comment.forEach((f, i) => { index = i + 1; m.push(f.allstar) })
+      const totalStar = m.length ? m.reduce((total, number) => total + number) : 0
+      let meanStar = totalStar && totalStar / index
+      if (meanStar && change.get(req.query.id) != meanStar || child.comment.length != change.get(req.query.id + 'length')) {
+        child.meanStar = meanStar
+        await food.save()
+        change.set(req.query.id, meanStar)
+        change.set(req.query.id + 'length', child.comment.length)
+      }
       res.status(200).json({ comment: child.comment })
     } catch (err) {
 
@@ -214,192 +128,102 @@ class FoodController {
   }
 
 
-
-
-
-  // ! ChildFood
-  // ! ChildFood
-
-
-
-
-
-  // async getfoodplus(req, res) {
-
-  //   try {
-  //     let food = await FoodModel.find();
-  //     food.map(async(f) => {
-  //       let food2 = await FoodModel.findById(f._id);
-  //       food2.price = 0
-  //       food2.save()
-  //       console.log(food2);
-  //     })
-  //     res.status(200).send({ food })
-  //   } catch (err) {
-  //     
-  //     console.log(err);
-  //   }
-
-  // }
-
-
-  // async editplus(req, res) {
-  //   try {
-  //     const food = await FoodModel.findById({ _id: req.params.id })
-  //     const child = food.childFood.find((f) => f._id == req.query.id)
-  //     const { num, total } = req.body
-  //     let fileName = ""
-  //     if (req.files.imageUrl) {
-  //       const image = req.files.imageUrl;
-  //       fileName = `${shortId.generate()}_${image.name}`;
-  //       await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-  //       fs.unlinkSync(`${appRoot}/public/upload/${child.imageUrl}`)
-  //     } else fileName = child.imageUrl
-  //     child.title = title;
-  //     child.price = price;
-  //     child.info = info;
-  //     child.imageUrl = fileName;
-  //     await food.save();
-  //     res.status(200).json({ childFood: child })
-  //   }
-  //   catch (err) { console.log(err) }
-
-  // }
-
-
-
-
-
-
-
-  // async editplus(req, res) {
-  //   try {
-  //     const food = await FoodModel.findById({ _id: req.params.id })
-  //     const child = food.childFood.find((f) => f._id == req.query.id)
-  //     const { num2, total2 } = req.body
-  //     child.num2 = num2;
-  //     child.total2 = total2;
-  //     await food.save();
-  //     console.log('num2 num2', num2);
-  //     res.status(200).json({ childFood: child })
-  //   }
-  //   catch (err) { console.log(err) }
-
-  // }
-
-
-
-
-
-
-
-
-  async getfoodplus(req, res) {
+  async getCommentSingleFood(req, res) {
     try {
-      let food = await FoodModel.find();
-      var ff = []
-      for (let a of food) {
-        for (let b of a.childFood) { ff.push(b) }
-      }
-      let d = ff.filter((f) => (f.total2 > 0))
-      // console.log('sdsdsdsdsd', d);
-      res.send(d)
-    }
-    catch (err) { console.log(err); }
-  }
-
-
-
-// getpayplus delpayplus getfoodplus  plus, minus
-
-
-// getallchildfood payplus, editplus
-
-
-  async payplus(req, res) {
-
-    try {
-      // console.log('req.body.price', req.body.price);
       const food = await FoodModel.findById({ _id: req.params.id })
-      food.price = req.body.price
+      const allChild = food.childFood.find((f) => f._id == req.query.id)
+      const child = allChild.comment.find((f) => f._id == req.query.single_id)
+      res.status(200).json({ comment: child })
+    } catch (err) {
+    }
+  }
+
+
+  async editcomment(req, res) {
+    try {
+      const validate = await CommentSchema.validate(req.body)
+      if(!validate) return res.status(400).send('err')
+      const { message, allstar } = req.body;
+
+      if (!req.user?.payload) return res.status(400).send('err')
+      const user = await UserModel.findById({ _id: req.user.payload.userId })
+      let uc = user && user.CommentPermission ? user.CommentPermission.find((uc) => uc === req.body.starId) : null
+
+      if (!uc && req.user.payload.isAdmin !== 'chief') return res.status(400).json('err')
+
+      const food = await FoodModel.findById({ _id: req.params.id })
+      const child = food.childFood.find((f) => f._id == req.query.id)
+      const comment = child.comment.find((f) => f._id == req.query.commentid)
+      comment.message = message
+      comment.allstar = allstar
       food.save()
-      res.status(200).send({ price: req.body.price })
+      res.status(200).json({ comment })
     } catch (err) {
 
-      console.log(err);
     }
-
   }
 
 
-
-  async getpayplus(req, res) {
-
+  async deletecomment(req, res) {
     try {
-      const food = await FoodModel.find();
-      console.log('aaaaa',food);
-      const f = a.reduce((total, number) => total + number)
-      res.status(200).send({ price: f })
+      const food = await FoodModel.findById({ _id: req.params.id })
+      if (!food) return res.status(400).send('err')
+      if (!req.user?.payload) return res.status(400).send('err')
+
+      const user = await UserModel.findById({ _id: req.user.payload.userId })
+      let uc = user && user.CommentPermission ? user.CommentPermission.find((uc) => uc === req.body.userId) : null
+      if (!uc && req.user.payload.isAdmin !== 'chief') return res.status(400).json('err')
+
+      const child = food.childFood.find((f) => f._id == req.query.id)
+      const childIndex = food.childFood.findIndex((f) => f._id == req.query.id)
+      const comment = child.comment.filter((item) => item._id != req.query.commentid)
+      food.childFood[childIndex].comment = comment
+      food.save()
+      res.status(200).json('comment')
     } catch (err) {
 
-      console.log(err);
-    }
-
-  }
-
-
-
-  async delpayplus(req, res) {
-
-    try {
-      let food = await FoodModel.find();
-      food.map(async (f) => {
-        let food2 = await FoodModel.findById(f._id);
-        food2.price = 0
-        food2.save()
-        // console.log(food2);
-      })
-      res.status(200).send({ food })
-    } catch (err) {
-
-      console.log(err);
     }
   }
-
-
 
 
   async confirmPayment(req, res) {
     try {
-      // console.log('req.user.email', req.user.payload);
-      const food = await FoodModel.find();
-      let a = food.map((f) => f.price)
-      const f = a.reduce((total, number) => total + number)
-      // console.log('ffffffff', food);
+      let foods = req.body.foods
+      if(!req.user) return res.status(400).send('err')
+      if(!req.body.floor) return res.status(385).send('err')
+      if(!req.body.plaque) return res.status(385).send('err')
       const response = await zarinpal.PaymentRequest({
-        Amount: f,
-        CallbackURL: 'http://192.168.42.34/verifyPayment',
+        Amount: req.query.allprice,
+        CallbackURL: 'http://192.168.42.42/verifyPayment',
         Description: 'زستوران',
-        Email: req.user.email, S
+        Email: req.user.payload.email,
       });
       await new PaymentModel({
-        user: req.user._id,
-        fullname: req.user.fullname,
-        email: req.user.email,
-        title: 'زستوران',
-        price: f,
+        user: req.user.payload.userId,
+        fullname: req.user.payload.fullname,
+        phone: req.user.payload.phone,
+        title: foods[0],
+        origin: JSON.parse(req.body.origin),
+        floor: req.body.floor,
+        plaque: req.body.plaque,
+        formattedAddress: req.body.formattedAddress,
+        streetName: req.body.streetName,
+        price: req.query.allprice,
         paymentCode: response.authority
       }).save();
-      // console.log(response.url);
-      res.status(200).send(response.url);
+
+      const user = await UserModel.findById({ _id: req.user.payload.userId })
+      for (let food of foods) {
+        let uc = user.CommentPermission.find((uc) => uc == food)
+        if (!uc) {user.CommentPermission = user.CommentPermission.concat(food)}
+      }; await user.save()
+
+      res.status(200).json(response.url);
     }
     catch (err) {
       console.log(err)
-      res.status(400).send("error")
     }
   }
-
-
 
 
   async verifyPayment(req, res) {
@@ -407,6 +231,7 @@ class FoodController {
       const paymentCode = req.query.Authority;
       const status = req.query.Status;
       const payment = await PaymentModel.findOne({ paymentCode });
+      if (!payment) return res.status(400).send('err')
       const response = await zarinpal.PaymentVerification({
         Amount: payment.price, Authority: paymentCode
       });
@@ -414,403 +239,159 @@ class FoodController {
         payment.refId = response.RefID;
         payment.success = true;
         await payment.save();
-        // console.log(payment);
+        const allAddress = await AddressModel.find();
+        await new AddressModel({
+          user: payment.user,
+          fullname: payment.fullname,
+          phone: payment.phone,
+          floor: payment.floor,
+          plaque: payment.plaque,
+          origin: payment.origin,
+          price: payment.price,
+          createdAt: new Date(),
+          id: allAddress.length ? allAddress[allAddress.length - 1].id + 1 : 1,
+          formattedAddress: payment.formattedAddress,
+          streetName: payment.streetName,
+        }).save()
+
         res.render("./paymant", {
-          pageTitle: "Pardakht",
+          pageTitle: "پرداخت",
           path: "/Pardakht",
           fullname: payment.fullname,
-          email: payment.email,
-          title: payment.title,
+          phone: payment.phone,
           price: payment.price,
-          refId: response.RefID
+          refId: response.RefID,
+          paymentCode: paymentCode
         })
       } else {
-        // res.send('<div style=" padding:3px 0 2rem; width:30%; border:1px solid silver; margin:5rem auto ; text-align:center"><h1 style="margin:1rem 0 2rem;" >خطا پرداخت انجام نشد</h1><button onclick="window.location.assign(`http://localhost:3000`)" style=" padding:6px; border:1px solid silver; border-radius:3%; background:yellow; text-decoration:none;">برگشت به صفحه اصلی</button></div>')
         res.send(`
-        <div style="padding:3px 0 2rem;width:30%;border:1px solid silver;margin:5rem auto;text-align:center">
-         <h1 style="margin:1rem 0 2rem;" >خطا پرداخت انجام نشد</h1>
-         <button onclick="window.history.back()" style=" padding:6px; border:1px solid silver; border-radius:3%;background:yellow; text-decoration:none;">برگشت به صفحه اصلی</button>
-         </div>
+  <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <div style="padding:15px;width:250px;height:250px;border:1px solid silver;margin:auto;text-align:center">
+         <h1 style="font-size:30px;color:red" >خطا پرداخت انجام نشد</h1>
+      </div>
+  </html>
           `)
       }
     }
     catch (err) {
       console.log(err)
-      res.status(400).send("error")
     }
   }
-
-
 
 
   async notification(req, res) {
     try {
-      const n = {
-        channelId: "1",
-        title: 'title',
-        message: "hnhnhn",
-        date: new Date(Date.now() + 1 * 1),
-        allowWhileIdle: false,
-      }
-
-      res.send(n)
+      let not = await NotifeeModel.findOne()
+      not ?
+        res.status(200).json({ title: not.title, message: not.message })
+        :
+        res.status(200).json({ title: '', message: '' })
     }
     catch (er) {
       console.log(er)
-      res.status(400).send("error")
     }
-
   }
-
-
 
 
   async reverse(req, res) {
     let options = { provider: 'openstreetmap' };
     let geoCoder = nodeGeocoder(options);
-
-    geoCoder.reverse({ lat: req.body.latitude, lon: req.body.longitude })
+    geoCoder.reverse({ lat: req.body.lat, lon: req.body.lng })
       .then((re) => {
-        res.send(re)
-        console.log(re)
+        res.json(re)
       })
       .catch((err) => console.log(err));
   }
-
-
 
 
   async geocode(req, res) {
     let options = { provider: 'openstreetmap' };
     let geoCoder = nodeGeocoder(options);
-
     geoCoder.geocode(req.body.loc)
       .then((re) => {
-        res.send(re)
-        console.log('re')
+        console.log(re)
+        res.json(re)
       })
       .catch((err) => console.log(err));
   }
 
 
-
-
-
-  async plus(req, res) {
+  async imagechat(req, res) {
     try {
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const child = food.childFood.find((f) => f._id == req.query.id)
-      child.num = child.num + 1
-      food.save()
-      res.status(200).send({ num: child.num })
+      const image = req.files.uri;
+      if (!image) return res.status(400).send(err)
+      const fileName = req.body.name;
+      await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
+      res.status(200).json(fileName)
     } catch (err) {
-
       console.log(err);
     }
   }
 
 
-
-
-
-
-  async minus(req, res) {
+  async sendImageProfile(req, res) {
     try {
-      const food = await FoodModel.findById({ _id: req.params.id })
-      const child = food.childFood.find((f) => f._id == req.query.id)
-      child.num = child.num - 1
-      food.save()
-      res.status(200).send({ num: child.num })
-    } catch (err) {
+      // if (!req.user?.payload?.userId) return res.status(400).json('err')
+      // await imageProfile.deleteMany({ user: req.user.payload.userId })
+      // const image = req.files.uri;
+      // if (!image) return res.status(400).json('err')
+      // const uri = (new Date().getTime() + Math.random() * 10000).toString() + '.jpg';
+      // await sharp(image.data).toFile(`${appRoot}/public/upload/profile/${uri}`)
+      // await new imageProfile({ uri: uri, user: req.user.payload.userId }).save()
+     
+      // .populate('Food','comment')
+      // .select('childFood comment');
+     
+      // const food = await FoodModel.findOne({title:'piza'})
+      // let cld = food.childFood.id('633301d2a4c7f302f9f0f15c')
+      // console.log(cld.comment.id('633f1ba135086d05a07204d3'));
+     
 
+      const food = await FoodModel.findOne({title:'piza'})
+      let childFood = food.childFood.id('633f28f4f2fe0403679b54bc')
+      let comment = childFood.comment.id('633f40a29e8fd103341641f6')
+      console.log(food.childFood);
+     
+
+
+      comment?.remove()
+
+      await food.save()
+
+      // console.log('foodd2',food[1].childFood.id('6341a3e00f37970413aa872b'))
+      // child.comment.push({ message, allstar, starId, fullname, imageUrl })
+
+      // const child = food.childFood.find((f) => f._id == req.query.id)
+      // let find = child.comment.findIndex((c) => (c.starId == req.user.payload.userId))
+      // if (!child.comment[find]) {
+      //   child.comment.imageUrl = uri
+      //   food.save()
+      // }
+     
+      res.status(200).json('good')
+    } catch (err) {
       console.log(err);
     }
   }
 
 
-
-
-
-
+  async getImageProfile(req, res) {
+    try {
+      const uri = await imageProfile.findOne({ user: req.user?.payload && req.user.payload.userId })
+      if (uri)
+        res.status(200).json({ uri: uri.uri })
+      else
+        res.status(200).json(null)
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
 }
 
 exports.FoodController = new FoodController()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//   async createSandwich(req, res) {
-//     try {
-//       await ChildFoodSchema.validate(req.body)
-//       const food = await FoodModel.findOne({ _id: req.params.id, title:"sandwich" })
-
-//       const { title, price, info } = req.body
-//       const image = req.files ? req.files.imageUrl : {};
-//       const fileName = `${shortId.generate()}_${image.name}`;
-//       await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-
-//       const sandwich = await new ChildFoodModel({ title, info, price, imageUrl: fileName }).save()
-
-//       food.sandwich.push({ title, price, info, imageUrl: fileName, _id: sandwich._id });
-//       food.save()
-//       res.status(200).send(food.sandwich)
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-//   async getAllSandwich(req, res) {
-//     try {
-//       const sandwich = await ChildFoodModel.find()
-//       res.status(200).send({sandwich})
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-
-//   async getSingleSandwich(req, res) {
-//     try {
-//       const sandwich = await ChildFoodModel.findById({ _id: req.params.id })
-//       res.status(200).send({sandwich})
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-
-//   async editSandwich(req, res) {
-//     try {
-//       const sandwich = await ChildFoodModel.findById(req.params.id);
-//       const { title, price, info } = req.body
-
-//       let fileName = ""
-//       if (req.files.imageUrl) {
-//         const image = req.files.imageUrl;
-//         fileName = `${shortId.generate()}_${image.name}`;
-//         await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-//         fs.unlinkSync(`${appRoot}/public/upload/${sandwich.imageUrl}`)
-//       } else fileName = sandwich.imageUrl
-
-//       sandwich.title = title;
-//       sandwich.price = price;
-//       sandwich.info = info;
-//       sandwich.imageUrl = fileName;
-//       await sandwich.save();
-//       res.status(200).json({ sandwich })
-//     }
-//     catch (err) { console.log(err) }
-//   }
-
-
-
-
-//   async deleteSandwich(req, res) {
-//     try {
-//       const sandwich = await ChildFoodModel.findById(req.params.id);
-//       const del = await ChildFoodModel.findByIdAndRemove(req.params.id)
-//       fs.unlinkSync(`${appRoot}/public/upload/${sandwich.imageUrl}`)
-//       res.status(200).send({ sandwich });
-//     } catch (err) {
-//       
-//     }
-//   }
-
-
-
-
-
-
-//   async createCommentSandwich(req, res) {
-//     try {
-//       const { fullname, email, message } = req.body;
-
-//       const sandwich = await ChildFoodModel.findById({ _id: req.params.id })
-//       sandwich.comment.push({ fullname, email, message });
-//       sandwich.save()
-//       res.status(200).send({ ...sandwich.comment })
-//     } catch (err) {
-//       
-//     }
-//   }
-
-
-
-
-//   async getCommentSandwich(req, res) {
-//     try {
-//       const sandwich = await ChildFoodModel.findById({ _id: req.params.id });
-//       res.status(200).json({ ...sandwich.comment })
-//     } catch (err) {
-//       
-//     }
-//   }
-
-
-
-
-// // TODO req.query.id
-// // ! req.query.name
-// // ? req.query.name
-// // * req.query.name
-
-
-
-
-//   async createDrink(req, res) {
-//     try {
-//       await ChildFoodSchema.validate(req.body)
-//       const food = await FoodModel.findOne({ _id: req.params.id , title:"drink" })
-
-//       const { title, price, info } = req.body
-//       const image = req.files ? req.files.imageUrl : {};
-//       const fileName = `${shortId.generate()}_${image.name}`;
-//       await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-
-//      const childFood = await new ChildFoodModel({ title, info, price, imageUrl: fileName }).save()
-
-//       food.childFood.push({ title, price, info, imageUrl: fileName, _id: childFood._id });
-//       food.save()
-//       res.status(200).send(food.childFood)
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-//   async getAllDrink(req, res) {
-//     try {
-//       const drink = await ChildFoodModel.find()
-//       res.status(200).send({drink})
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-
-//   async getSingleDrink(req, res) {
-//     try {
-//       const drink = await ChildFoodModel.findById({ _id: req.params.id })
-//       res.status(200).send({drink})
-//     } catch (err) {
-//       
-//       console.log(err);
-//     }
-//   }
-
-
-
-
-
-//   async editDrink(req, res) {
-//     try {
-//       const drink = await ChildFoodModel.findById(req.params.id);
-//       const { title, price, info } = req.body
-
-//       let fileName = ""
-//       if (req.files.imageUrl) {
-//         const image = req.files.imageUrl;
-//         fileName = `${shortId.generate()}_${image.name}`;
-//         await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
-//         fs.unlinkSync(`${appRoot}/public/upload/${drink.imageUrl}`)
-//       } else fileName = drink.imageUrl
-
-//       drink.title = title;
-//       drink.price = price;
-//       drink.info = info;
-//       drink.imageUrl = fileName;
-//       await drink.save();
-//       res.status(200).json({ drink })
-//     }
-//     catch (err) { console.log(err) }
-//   }
-
-
-
-
-//   async deleteDrink(req, res) {
-//     try {
-//       const drink = await ChildFoodModel.findById(req.params.id);
-//       const del = await ChildFoodModel.findByIdAndRemove(req.params.id)
-//       fs.unlinkSync(`${appRoot}/public/upload/${drink.imageUrl}`)
-//       res.status(200).send({ drink });
-//     } catch (err) {
-//       
-//     }
-//   }
-
-
-
-
-
-
-//   async createCommentDrink(req, res) {
-//     try {
-//       const { fullname, email, message } = req.body;
-
-//       const drink = await ChildFoodModel.findById({ _id: req.params.id })
-//       drink.comment.push({ fullname, email, message });
-//       drink.save()
-//       res.status(200).send({ ...drink.comment })
-//     } catch (err) {
-//       
-//     }
-//   }
-
-
-
-
-//   async getCommentDrink(req, res) {
-//     try {
-//       const drink = await ChildFoodModel.findById({ _id: req.params.id });
-//       res.status(200).json({ ...drink.comment })
-//     } catch (err) {
-//       
-//     }
-//   }
-

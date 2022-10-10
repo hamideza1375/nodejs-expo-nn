@@ -1,8 +1,6 @@
 var fs = require('fs');
 const appRoot = require("app-root-path");
 const express = require("express");
-const NodeCache = require( "node-cache" );
-const myCache = new NodeCache( { stdTTL: 100, checkperiod: 120 } );
 const mongoose = require('mongoose');
 const expressLayout = require("express-ejs-layouts");
 const fileUpload = require("express-fileupload");
@@ -11,6 +9,7 @@ dotEnv.config({ path: "./config/config.env" });
 const { setHeaders } = require("./middleware/headers");
 const Food = require("./router/FoodRouter");
 const User = require("./router/UserRouter");
+const Admin = require("./router/AdminRouter");
 const { MessageModels } = require('./model/MessageModels');
 
 const io = require("socket.io");
@@ -32,8 +31,20 @@ app.set('views', './views');
 app.use(fileUpload());
 
 
+
+
+app.get("/map",(req, res) => {
+  res.render("./map", {
+    pageTitle: "map",
+    path: "/map",
+    search:''
+  })});
+
+
+
 app.use(Food)
 app.use(User)
+app.use(Admin)
 
 app.use((req, res) => {
     res.send("<h1 style='text-align:center;color:red; font-size:55px'> 404 </h1>");
@@ -97,7 +108,8 @@ mongoose.connect(
   socket.on("deleteOne", async (id, data) => {
     try {
       let message = await MessageModels.findOne({ id: id })
-      message.msgNm.push({ name: data.name })
+      console.log(message);
+      message.msgNm = data.name
       message.save()
       socket.emit("deleteOne", id);
     } catch (err) { console.log(err); }

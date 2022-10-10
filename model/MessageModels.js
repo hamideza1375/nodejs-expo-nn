@@ -7,13 +7,10 @@ const SchamaSender = new mongoose.Schema({
     name: String,
 })
 
-const SchamaMsgNm = new mongoose.Schema({
-    name: String,
-})
 
 
 const MessageModels = new mongoose.Schema({
-    msgNm: [SchamaMsgNm],
+    msgNm: String,
     id: String,
     roomNumber: String,
     msg: String,

@@ -1,26 +1,20 @@
 
-<div style="width: 410px; margin-top: 4rem; border-radius: 3%;" class="text-center p-2 border border-dark mx-auto ">
+<div style="overflow: hidden;height:100vh;width: 100%;max-width: 450px;" class="text-center p-2 border border-silver mx-auto ">
 
-
+  
   <!-- <div style="width: 100%;height: auto;"> -->
  <div class="row mt-5 mb-3" >
  <p class="col-lg-6 col-sm-12 font-weight-bolder ">نام و نام ‌خانوادگی</p>
  <p class="col-lg-6 col-sm-12"><%= fullname %></p>
 </div>
 
-
-<div class="row mb-3" >
- <p class="col-lg-6 col-sm-12 font-weight-bolder ">عنوان دوره</p>
- <p class="col-lg-6 col-sm-12"><%= title %></p>
-</div>
-
 <div class="row mb-3">
   <p class="col-lg-6 col-sm-12 font-weight-bolder">مبلغ پرداخت شده</p>
-  <p class="col-lg-6 col-sm-12"><%= price %></p>
+  <p id="price" class="col-lg-6 col-sm-12"><%= price %></p>
 </div>
 
 <div class="row mb-3">
-  <p class="col-lg-5 col-sm-12 font-weight-bolder"> ایمیل</p>
+  <p class="col-lg-5 col-sm-12 font-weight-bolder"> تلفن</p>
   <p class="col-lg-6 col-sm-12"><%= phone %></p>
 </div>
 
@@ -34,10 +28,68 @@
    <p class="col-lg-6 col-sm-12"><%= refId %></p>
 </div>
 
-<a class="btn btn-info mb-5 mt-5" onclick="window.history.go(-1)">بازگشت صفحه اصلی</a>
+<!-- <a class="btn btn-info mb-5 mt-5" onclick="window.history.go(-1)">بازگشت صفحه اصلی</a> -->
 
 
 </Button>
 <!-- </div> -->
+
+<script>
+
+function spacePrice(inputPrice) {
+    try {
+      let rt = String(inputPrice)
+      let k = ''
+      for (let i = 0; i < rt.length; i++) {
+        k +=
+          rt.length == 4 ?
+            (i == 0 ?
+              rt[i] + '.'
+              :
+              rt[i])
+            :
+            rt.length == 5 ?
+              (i == 1 ?
+                rt[i] + '.'
+                :
+                rt[i])
+              :
+              rt.length == 7 ?
+                (i == 0 || i == 3
+                  ? rt[i] + '.'
+                  : rt[i])
+                :
+                rt.length == 8 ?
+                  (i == 1 || i == 4
+                    ? rt[i] + '.'
+                    : rt[i])
+                  :
+                  rt.length == 9 ?
+                    (i == 2 || i == 5
+                      ? rt[i] + '.'
+                      : rt[i])
+                    :
+                    rt.length == 10 ?
+                      (i == 0 || i == 3 || i == 6
+                        ? rt[i] + '.'
+                        : rt[i])
+                      :
+                      rt.length == 11 ?
+                        (i == 1 || i == 4 || i == 7
+                          ? rt[i] + '.'
+                          : rt[i])
+                        :
+                        i == 2
+                          ? rt[i] + '.'
+                          : rt[i]
+      }
+      return k
+    }
+    catch (err) { console.log(err) }
+  }
+
+  document.getElementById('price').innerHTML = spacePrice(document.getElementById('price').innerHTML)
+
+</script>
 
 </div>

@@ -2,8 +2,11 @@ const mongoose = require('mongoose');
 
 
 const CommenteModel = new mongoose.Schema({
+    starId: { type: mongoose.Schema.Types.ObjectId, ref: "starId" },
+    fullname:String,
+    imageUrl:String,
     message: { type: String, required: true },
-    allstar: { type: Number, required: true  },
+    allstar: { type: Number, required: 1  },
     commentId: { type: mongoose.Schema.Types.ObjectId, ref: "food" }
 });
 
@@ -14,7 +17,7 @@ const ChildFoodModel = new mongoose.Schema({
     price: { type: Number, required: true },
     info: { type: String, required: true },
     imageUrl: { type: String, required: true },
-    meanStar: { type: Number, required: true, default: 4 },
+    meanStar: { type: Number, required: true, default: 0 },
     num: { type: Number, default:0 },
     total: { type: Number, default:0 },
     available: { type: Boolean, default:true },

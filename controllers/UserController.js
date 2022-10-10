@@ -1,54 +1,83 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const UserModel = require('../model/UserModel');
-const { UserSchema } = require('../validator/UserSchema');
-
+const { RegisterVerifyCodeSchema, SendPhoneSchema, LoginSchama, ResetPasswordSchama, SendCodeSchema } = require('../validator/UserSchema');
 const captchapng = require("captchapng");
 var CAPTCHA_NUM = null;
-
 const nodeCache = require("node-cache");
 const myCache = new nodeCache({ stdTTL: 120, checkperiod: 150 })
-
 var Kavenegar = require('kavenegar');
-var api = Kavenegar.KavenegarApi({
-  apikey: '6F39365A38764E6178634C794B3339655039706A6F4C425362707958716252414233316835514634754D453D'
-});
-
-
-
+var api = Kavenegar.KavenegarApi({ apikey: '6F39365A38764E6178634C794B3339655039706A6F4C425362707958716252414233316835514634754D453D' });
 
 
 class UserController {
-
   async register(req, res) {
     try {
-      await UserSchema.validate(req.body)
-      const { fullname, password, phone } = req.body
+      const validate = await SendPhoneSchema.validate(req.body)
+      if(!validate) return res.status(400).send('err')   
+      const { phone } = req.body
       let userPhone = await UserModel.findOne({ phone });
-      if (userPhone) return res.status(400).json(" ایمیل موجود هست")
+      if (userPhone) return res.status(398).json(" شماره از قبل موجود هست")
+      const num = Math.floor(Math.random() * 90000 + 10000)
+      myCache.set("code", num)
+      api.Send({
+        message: `ارسال کد از رستوران 
+        Code: ${num}`,
+        sender: "2000500666",
+        receptor: req.body.phone,
+      },
+        function (response, status) {
+          if (!status || !response) return res.status(400).json('err')
+          console.log('response',response)
+          res.status(status).json(response)
+        });
+      console.log(11, req.body.phone)
 
-      const user = await UserModel.create({ fullname, password, phone });
-      let userIndex = await UserModel.find();
 
-      if (userIndex.length === 1) {
-        userIndex[0].isAdmin = 'chief'
-        userIndex[0].save()
-        console.log(1)
-      }
-      console.log(userIndex);
-      res.status(201).json({ user })
     } catch (err) {
       console.log(err)
     }
   }
 
 
-  async login(req, res) {
+
+  async verifycodeRegister(req, res) {
     try {
+      let validate = await RegisterVerifyCodeSchema.validate(req.body)
+      if(!validate) return res.status('400').send('err')
+      const { fullname, password, phone } = req.body
+      let myCode = req.body.code;
+      let myCd = myCache.get("code");
+      console.log(myCode, myCd);
+      if (myCode != myCd) return res.status(400).json("اشتباه")
+      const user = await UserModel.create({ fullname, password, phone });
+      let userIndex = await UserModel.find();
+      if (userIndex.length === 1) {
+        userIndex[0].isAdmin = 'chief'
+        userIndex[0].save()
+      }
+      res.status(201).json({ user })
+    }
+    catch (err) { console.log(err); }
+  }
+
+
+
+
+
+
+
+
+  async login(req, res) {
+    console.log('ttrrrrrr');
+    console.log('tt',req.body);
+    try {
+      let validate = await LoginSchama.validate(req.body)
+      if(!validate) return res.status('400').send('err')
       const user = await UserModel.findOne({ phone: req.body.phone });
-      if (!user) { console.log('!user'); return res.status(400).json('کاربری با این ایمیل یافت نشد'); }
+      if (!user) { console.log('!user'); return res.status(397).json('کاربری با این ایمیل یافت نشد'); }
       const pass = await bcrypt.compare(req.body.password, user.password);
-      if (!pass) { console.log('!pass'); return res.status(400).json('کاربری با این پسورد یافت نشد'); }
+      if (!pass) { console.log('!pass'); return res.status(397).json('کاربری با این پسورد یافت نشد'); }
       const users = {
         isAdmin: user.isAdmin,
         userId: user._id.toString(),
@@ -61,7 +90,11 @@ class UserController {
 
       if (parseInt(req.body.captcha) == CAPTCHA_NUM) {
         res.status(200).header(token).json({ token, exp, userId: user._id.toString() });
-      } else throw new TypeError('مساوی نیست')
+      } 
+      else {
+        res.status(399).send('مساوی نیست')
+       throw new TypeError('مساوی نیست')
+      }
     } catch (err) {
       console.log(err)
     }
@@ -71,6 +104,8 @@ class UserController {
 
   async resetPassword(req, res) {
     try {
+      const validate = await ResetPasswordSchama.validate(req.body)
+      if(!validate) return res.status(400).send('err')
       const { password, confirmPassword } = req.body;
       if (password === confirmPassword) {
         const user = await UserModel.findById({ _id: req.params.id });
@@ -84,39 +119,6 @@ class UserController {
       console.log(err)
     }
   }
-
-
-
-  async userAdmin(req, res) {
-    try {
-      const user = await UserModel.findOne({ phone: req.body.phone });
-      console.log('user', user);
-      if (!user) return res.status(400).json('khata');
-      user.isAdmin = 'courier';
-      await user.save();
-      res.status(200).json('good');
-    }
-    catch (err) {
-      console.log(err)
-    }
-  }
-
-
-  async deleteAdmin(req, res) {
-    try {
-      const user = await UserModel.findOne({ phone: req.body.phone });
-      console.log('user', user);
-      if (!user) return res.status(400).json('khata');
-      user.isAdmin = '';
-      await user.save();
-      res.status(200).json('good');
-    }
-    catch (err) {
-      console.log(err)
-    }
-  }
-  
-
 
 
 
@@ -137,9 +139,12 @@ class UserController {
 
 
 
-
   async sendcode(req, res) {
     try {
+      const validate = await SendPhoneSchema.validate(req.body)
+      if(!validate) return res.status(400).send('err')
+      const user = await UserModel.findOne({ phone: req.body.phone });
+      if (!user) return res.status(400).send('شما قبلا ثبت نام نکردین')
       const num = Math.floor(Math.random() * 90000 + 10000)
       myCache.set("phone", req.body.phone)
       myCache.set("code", num)
@@ -151,8 +156,11 @@ class UserController {
         receptor: req.body.phone,
       },
         function (response, status) {
+          if (!status || !response) return res.status(400).json('err')
+          console.log('response',response)
           res.status(status).json(response)
         });
+      console.log(11, req.body.phone)
 
     }
     catch (err) {
@@ -162,22 +170,21 @@ class UserController {
 
 
 
-
   async verifycode(req, res) {
     try {
+      const validate = await SendCodeSchema.validate(req.body)
+      if(!validate) return res.status(400).send('err')
       let phone = myCache.get("phone");
       const user = await UserModel.findOne({ phone })
       let myCode = req.body.code;
       let myCd = myCache.get("code");
       console.log(myCode, myCd);
-
       if (myCode != myCd) res.status(400).json("اشتباه")
       else res.status(200).json(user._id)
     }
     catch (err) { console.log(err); }
 
   }
-
 
 }
 

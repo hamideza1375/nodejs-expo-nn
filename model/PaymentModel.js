@@ -13,6 +13,9 @@ const Payment = new mongoose.Schema({
   floor: Number,
   plaque: Number,
   formattedAddress: String,
+  streetName:String,
+  origin:{type:Object},
+  foods:{type:Array},
   success: { type: Boolean, default: false },
   user: { type : mongoose.Schema.Types.ObjectId, ref : "user" },
 });

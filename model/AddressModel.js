@@ -7,6 +7,8 @@ const Address = new mongoose.Schema({
   floor: Number,
   plaque: Number,
   formattedAddress: String,
+  streetName:String,
+  origin:Object,
   price:Number,
   id: { type: Number, default:1 },
   createdAt: { type: Date },

@@ -4,12 +4,12 @@ const jwt = require('jsonwebtoken');
 module.exports = (req, res, next) => {
   try {
     const user = jwt.decode(req.header('Authorization'), {complete:true});
-    if (!user) res.status(400).send('error1')
+    if(!user) res.status(400).send('err')
     req.user = user;
     next()
   } catch(err) {
     console.log(err);
-    next()
+    if(!user) res.status(400).send('err')
   };
 };
 
