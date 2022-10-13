@@ -10,10 +10,9 @@ const AddressModel = require('../model/AddressModel');
 
 
 class AdminController {
-  
+
   async createFood(req, res) {
     try {
-      console.log('req.files',req.files);
       await FoodSchema.validate(req.body)
       if (!req.files) return res.status(400).json('err')
       const image = req.files.imageUrl;
@@ -65,7 +64,7 @@ class AdminController {
   async createChildFood(req, res) {
     try {
       const validate = await ChildFoodSchema.validate(req.body)
-      if(!validate) return res.status(400).send('err')
+      if (!validate) return res.status(400).send('err')
       const food = await FoodModel.findById({ _id: req.params.id })
       const { title, price, info } = req.body
       if (!req.files) return res.status(400).json('err')
@@ -119,7 +118,8 @@ class AdminController {
       food.save()
       if (fs.existsSync(`${appRoot}/public/upload/${child.imageUrl}`))
         fs.unlinkSync(`${appRoot}/public/upload/${child.imageUrl}`)
-      res.status(200).json({ childFood });
+      
+      res.status(200).json('');
     } catch (err) {
 
     }
@@ -141,7 +141,7 @@ class AdminController {
   async deleteAddress(req, res) {
     try {
       let address = await AddressModel.findOne({ _id: req.params.id })
-      if(!address) return res.status(400).send('err')
+      if (!address) return res.status(400).send('err')
       address.del = req.user.payload.userId
       address.save()
       res.json("del")
@@ -154,8 +154,8 @@ class AdminController {
 
   async deleteAllAddress(req, res) {
     try {
-        await AddressModel.deleteMany()
-        res.json("del")
+      await AddressModel.deleteMany()
+      res.json("del")
     }
     catch (er) {
       console.log(er)
@@ -180,7 +180,7 @@ class AdminController {
   async unAvailable(req, res) {
     try {
       const food = await FoodModel.findById({ _id: req.params.id })
-      if(!food) return res.status(400).send('err')
+      if (!food) return res.status(400).send('err')
       let fd = food.childFood.find((f) => (f._id == req.query._id))
       fd.available = req.body.available
       food.save()
@@ -245,8 +245,8 @@ class AdminController {
     try {
       const userAdmin = await UserModel.findOne({ phone: req.body.adminPhone });
       const newAdminPhone = await UserModel.findOne({ phone: req.body.newAdminPhone });
-      if(!newAdminPhone  || !userAdmin) return res.status(400).json('err');
-      if(req.body.adminPhone === req.body.newAdminPhone || userAdmin.isAdmin !== 'chief') return res.status(400).json('err');
+      if (!newAdminPhone || !userAdmin) return res.status(400).json('err');
+      if (req.body.adminPhone === req.body.newAdminPhone || userAdmin.isAdmin !== 'chief') return res.status(400).json('err');
       userAdmin.isAdmin = '';
       newAdminPhone.isAdmin = 'chief';
       await userAdmin.save();
@@ -262,7 +262,7 @@ class AdminController {
   async allUserAdmin(req, res) {
     try {
       const user = await UserModel.find();
-      const userAdmin = user.filter((user)=> user.isAdmin === 'courier' )
+      const userAdmin = user.filter((user) => user.isAdmin === 'courier')
       console.log('user', userAdmin);
       res.status(200).json(userAdmin);
     }

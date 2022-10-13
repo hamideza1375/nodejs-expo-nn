@@ -7,8 +7,8 @@ const AuthAdmin = require('../middleware/AuthAdmin');
 // User
 router.post("/useradmin", AuthAdmin, Admin.setUserAdmin);
 router.post("/deleteadmin", AuthAdmin, Admin.deleteAdmin);
-router.get("/alluserAdmin", AuthAdmin, Admin.allUserAdmin);
-router.post("/changeAdmin", Admin.changeAdmin);
+router.get("/alluserAdmin",AuthAdmin, Admin.allUserAdmin);
+router.post("/changeAdmin",AuthAdmin, Admin.changeAdmin);
 // Food 
 router.post('/createfood', AuthAdmin, Admin.createFood);
 router.put('/editfood/:id', AuthAdmin, Admin.editFood);
@@ -25,7 +25,7 @@ router.get('/listavailable', Admin.listAvailable);
 // getAllAddress
 router.get('/getAllAddress', user, Admin.getAllAddress);
 router.delete('/deleteaddress/:id', user, Admin.deleteAddress);
-router.delete('/deleteAllAddress', [user, AuthAdmin], Admin.deleteAllAddress);
+router.delete('/deleteAllAddress', AuthAdmin, Admin.deleteAllAddress);
 
 module.exports = router
 

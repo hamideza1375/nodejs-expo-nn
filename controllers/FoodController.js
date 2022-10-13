@@ -249,29 +249,9 @@ class FoodController {
           formattedAddress: payment.formattedAddress,
           streetName: payment.streetName,
         }).save()
-
-        res.render("./paymant", {
-          pageTitle: "پرداخت",
-          path: "/Pardakht",
-          fullname: payment.fullname,
-          phone: payment.phone,
-          price: payment.price,
-          refId: response.RefID,
-          paymentCode: paymentCode
-        })
+        res.redirect(`http://localhost:19006/VerifyPayment?qualification=ok&&fullname=${payment.fullname}&&price=${payment.price}&&phone=${payment.phone}&&refId=${response.RefID}&&floor=${payment.floor}&&plaque=${payment.plaque}&&formattedAddress=${payment.formattedAddress}&&createdAt=${JSON.stringify(new Date)}`)
       } else {
-        res.send(`
-  <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <div style="padding:15px;width:250px;height:250px;border:1px solid silver;margin:auto;text-align:center">
-         <h1 style="font-size:30px;color:red" >خطا پرداخت انجام نشد</h1>
-      </div>
-  </html>
-          `)
+        res.redirect(`http://localhost:19006/VerifyPayment?qualification=error`)
       }
     }
     catch (err) {
