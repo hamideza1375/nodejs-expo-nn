@@ -27,6 +27,9 @@ router.get('/getAllAddress', user, Admin.getAllAddress);
 router.delete('/deleteaddress/:id', user, Admin.deleteAddress);
 router.delete('/deleteAllAddress', AuthAdmin, Admin.deleteAllAddress);
 
+router.get("/getproposal",AuthAdmin, Admin.getProposal);
+router.delete("/deleteMultiProposal",AuthAdmin, Admin.deleteMultiProposal);
+
 module.exports = router
 
 

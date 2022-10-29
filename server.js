@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require('mongoose');
 const expressLayout = require("express-ejs-layouts");
 const fileUpload = require("express-fileupload");
+const winston = require('winston');
 const dotEnv = require("dotenv");
 dotEnv.config({ path: "./config/config.env" });
 const { setHeaders } = require("./middleware/headers");
@@ -11,9 +12,25 @@ const Food = require("./router/FoodRouter");
 const User = require("./router/UserRouter");
 const Admin = require("./router/AdminRouter");
 const { MessageModels } = require('./model/MessageModels');
+const ErrorMiddleware = require('./middleware/Error');
 
 const io = require("socket.io");
 const app = express();
+
+
+
+winston.add(new winston.transports.File({ filename: 'error-log.log' }));
+
+process.on('uncaughtException', (err) => {
+  console.log(err);
+  winston.error(err.message);
+});
+process.on('unhandledRejection', (err) => {
+  console.log(err);
+  winston.error(err.message);
+});
+
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -29,16 +46,9 @@ app.set('views', './views');
 
 
 app.use(fileUpload());
+app.use(ErrorMiddleware);
 
 
-
-
-app.get("/map",(req, res) => {
-  res.render("./map", {
-    pageTitle: "map",
-    path: "/map",
-    search:''
-  })});
 
 
 

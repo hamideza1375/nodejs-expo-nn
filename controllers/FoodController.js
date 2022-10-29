@@ -13,39 +13,28 @@ const AddressModel = require('../model/AddressModel');
 let change = new Map();
 
 
-class FoodController {
+function FoodController() {
 
-  async getFoods(req, res) {
-    try {
+  this.getFoods = async (req, res) => {
       let food = await FoodModel.find()
+      // throw new('salllam')
       res.status(200).json(food);
-    } catch (err) {
-    }
   }
 
 
-  async getSingleTitleFoods(req, res) {
-    try {
+  this.getSingleTitleFoods = async (req, res) => {
       let food = await FoodModel.findById(req.params.id)
       res.status(200).json(food);
-    } catch (err) {
-      console.log(err);
-    }
   }
 
 
-  async getFood(req, res) {
-    try {
+  this.getFood = async (req, res) => {
       let food = await FoodModel.find(req.params.id)
       res.status(200).json(food);
-    } catch (err) {
-
-    }
   }
 
 
-  async getAllChildFood(req, res) {
-    try {
+  this.getAllChildFood = async (req, res) => {
       const food = await FoodModel.find()
       const child = []
       for (let n of food) {
@@ -54,33 +43,23 @@ class FoodController {
         }
       }
       res.status(200).json({ child })
-    } catch (err) {
-      console.log(err);
-    }
   }
 
 
-  async getSingleChildFood(req, res) {
-    try {
+  this.getSingleChildFood = async (req, res) => {
       const user = req.user?.payload ? await UserModel.findById({ _id: req.user.payload.userId }) : {}
       const food = await FoodModel.findById({ _id: req.params.id })
       const child = food.childFood.find((f) => f._id == req.query.id)
       let permission = user?.CommentPermission ? user.CommentPermission.find((f) => (f == child._id)) : false
       res.status(200).json({ child, permission })
-    } catch (err) {
-      console.log(err);
-    }
   }
 
 
-  async createCommentChildFood(req, res) {
-    try {
-      const validate = await CommentSchema.validate(req.body)
-      if (!validate) return res.status(400).send('err')
-      if (!req.user) return res.status(400).send('err')
+  this.createCommentChildFood = async (req, res) => {
+      await CommentSchema.validate(req.body)
       const { message, allstar, starId, fullname, imageUrl, id } = req.body;
       const user = await UserModel.findById({ _id: req.user.payload.userId })
-      console.log('user?.CommentPermission', user.CommentPermission);
+      // console.log('user?.CommentPermission', user.CommentPermission);
       let uc = user && user.CommentPermission ? user.CommentPermission.find((uc) => uc === id) : null
       if (!uc && (req.user.payload.isAdmin !== 'chief')) return res.status(400).json('err')
       const food = await FoodModel.findById({ _id: req.params.id })
@@ -96,14 +75,10 @@ class FoodController {
         food.save()
       }
       res.status(200).json({ ...child.comment })
-    } catch (err) {
-      console.log(err);
-    }
   }
 
 
-  async getCommentChildFood(req, res) {
-    try {
+  this.getCommentChildFood = async (req, res) => {
       const food = await FoodModel.findById({ _id: req.params.id })
       const child = food.childFood.find((f) => f._id == req.query.id)
       let m = []
@@ -118,29 +93,20 @@ class FoodController {
         change.set(req.query.id + 'length', child.comment.length)
       }
       res.status(200).json({ comment: child.comment })
-    } catch (err) {
-
-    }
   }
 
 
-  async getCommentSingleFood(req, res) {
-    try {
+  this.getCommentSingleFood = async (req, res) => {
       const food = await FoodModel.findById({ _id: req.params.id })
       const allChild = food.childFood.find((f) => f._id == req.query.id)
       const child = allChild.comment.find((f) => f._id == req.query.single_id)
       res.status(200).json({ comment: child })
-    } catch (err) {
-    }
   }
 
 
-  async editcomment(req, res) {
-    try {
-      const validate = await CommentSchema.validate(req.body)
-      if (!validate) return res.status(400).send('err')
+  this.editcomment = async (req, res) => {
+      await CommentSchema.validate(req.body)
       const { message, allstar } = req.body;
-
       if (!req.user?.payload) return res.status(400).send('err')
       const user = await UserModel.findById({ _id: req.user.payload.userId })
       let uc = user && user.CommentPermission ? user.CommentPermission.find((uc) => uc === req.body.starId) : null
@@ -154,14 +120,10 @@ class FoodController {
       comment.allstar = allstar
       food.save()
       res.status(200).json({ comment })
-    } catch (err) {
-
-    }
   }
 
 
-  async deletecomment(req, res) {
-    try {
+  this.deletecomment = async (req, res) => {
       const food = await FoodModel.findById({ _id: req.params.id })
       if (!food) return res.status(400).send('err')
       if (!req.user?.payload) return res.status(400).send('err')
@@ -176,14 +138,10 @@ class FoodController {
       food.childFood[childIndex].comment = comment
       food.save()
       res.status(200).json('comment')
-    } catch (err) {
-
-    }
   }
 
 
-  async confirmPayment(req, res) {
-    try {
+  this.confirmPayment = async (req, res) => {
       let foods = req.body.foods
       if (!req.user) return res.status(400).send('err')
       if (!req.body.floor) return res.status(385).send('err')
@@ -205,7 +163,8 @@ class FoodController {
         formattedAddress: req.body.formattedAddress,
         streetName: req.body.streetName,
         price: req.query.allprice,
-        paymentCode: response.authority
+        paymentCode: response.authority,
+        createdAt: new Date(),
       }).save();
 
       const user = await UserModel.findById({ _id: req.user.payload.userId })
@@ -215,15 +174,10 @@ class FoodController {
       }; await user.save()
 
       res.status(200).json(response.url);
-    }
-    catch (err) {
-      console.log(err)
-    }
   }
 
 
-  async verifyPayment(req, res) {
-    try {
+  this.verifyPayment = async (req, res) => {
       const paymentCode = req.query.Authority;
       const status = req.query.Status;
       const payment = await PaymentModel.findOne({ paymentCode });
@@ -249,32 +203,42 @@ class FoodController {
           formattedAddress: payment.formattedAddress,
           streetName: payment.streetName,
         }).save()
-        res.redirect(`http://localhost:19006/VerifyPayment?qualification=ok&&fullname=${payment.fullname}&&price=${payment.price}&&phone=${payment.phone}&&refId=${response.RefID}&&floor=${payment.floor}&&plaque=${payment.plaque}&&formattedAddress=${payment.formattedAddress}&&createdAt=${JSON.stringify(new Date)}`)
+        // open(`http://localhost:3000/VerifyPayment?qualification=ok&&fullname=${payment.fullname}&&price=${payment.price}&&phone=${payment.phone}&&refId=${response.RefID}&&floor=${payment.floor}&&plaque=${payment.plaque}&&formattedAddress=${payment.formattedAddress}&&createdAt=${JSON.stringify(new Date)}`)
+        // res.redirect(`http://localhost:3000/VerifyPayment?qualification=ok&&fullname=${payment.fullname}&&price=${payment.price}&&phone=${payment.phone}&&refId=${response.RefID}&&floor=${payment.floor}&&plaque=${payment.plaque}&&formattedAddress=${payment.formattedAddress}&&createdAt=${JSON.stringify(new Date)}`)
+
+        res.render("./paymant", {
+          pageTitle: "پرداخت",
+          qualification: 'ok',
+          fullname: payment.fullname,
+          price: payment.price,
+          phone: payment.phone,
+          refId: response.RefID,
+          floor: payment.floor,
+          plaque: payment.plaque,
+          formattedAddress: payment.formattedAddress,
+          createdAt: JSON.stringify(new Date),
+        })
+
       } else {
-        res.redirect(`http://localhost:19006/VerifyPayment?qualification=error`)
+        res.status(500).render("./paymant", {
+          pageTitle: "پرداخت",
+          qualification: 'error',
+        })
+        // res.status(500).redirect(`http://localhost:3000/VerifyPayment?qualification=error`)
       }
-    }
-    catch (err) {
-      console.log(err)
-    }
   }
 
 
-  async notification(req, res) {
-    try {
+  this.notification = async (req, res) => {
       let not = await NotifeeModel.findOne()
       not ?
         res.status(200).json({ title: not.title, message: not.message })
         :
         res.status(200).json({ title: '', message: '' })
-    }
-    catch (er) {
-      console.log(er)
-    }
   }
 
 
-  async reverse(req, res) {
+  this.reverse = async (req, res) => {
     let options = { provider: 'openstreetmap' };
     let geoCoder = nodeGeocoder(options);
     geoCoder.reverse({ lat: req.body.lat, lon: req.body.lng })
@@ -285,33 +249,27 @@ class FoodController {
   }
 
 
-  async geocode(req, res) {
+  this.geocode = async (req, res) => {
     let options = { provider: 'openstreetmap' };
     let geoCoder = nodeGeocoder(options);
     geoCoder.geocode(req.body.loc)
       .then((re) => {
-        console.log(re)
         res.json(re)
       })
       .catch((err) => console.log(err));
   }
 
 
-  async imagechat(req, res) {
-    try {
+  this.imagechat = async (req, res) => {
       const image = req.files.uri;
       if (!image) return res.status(400).send(err)
       const fileName = req.body.name;
       await sharp(image.data).toFile(`${appRoot}/public/upload/${fileName}`)
       res.status(200).json(fileName)
-    } catch (err) {
-      console.log(err);
-    }
   }
 
 
-  async sendImageProfile(req, res) {
-    try {
+  this.sendImageProfile = async (req, res) => {
       if (!req.user?.payload?.userId) return res.status(400).json('err')
       await imageProfile.deleteMany({ user: req.user.payload.userId })
       const image = req.files.uri;
@@ -329,8 +287,8 @@ class FoodController {
                 if (food[i].childFood[n].comment[y].starId == req.user.payload.userId) {
                   food[i].childFood[n].comment[y].imageUrl = uri
                   await FoodModel.updateMany(
-                    {_id: food[i]._id},
-                    {childFood:food[i].childFood}
+                    { _id: food[i]._id },
+                    { childFood: food[i].childFood }
                   )
                 }
               }
@@ -338,14 +296,11 @@ class FoodController {
           }
       }
       res.status(200).json('good')
-    } catch (err) {
-      console.log(err);
-    }
   }
 
-  
 
-  async getImageProfile(req, res) {
+
+  this.getImageProfile = async (req, res) => {
     try {
       const uri = await imageProfile.findOne({ user: req.user?.payload && req.user.payload.userId })
       if (uri)

@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const CommenteModel = new mongoose.Schema({
     starId: { type: mongoose.Schema.Types.ObjectId, ref: "starId" },
     fullname:String,
-    imageUrl:String,
+    imageUrl:{ type: String, default: '' },
     message: { type: String, required: true },
     allstar: { type: Number, required: 1  },
     commentId: { type: mongoose.Schema.Types.ObjectId, ref: "food" }

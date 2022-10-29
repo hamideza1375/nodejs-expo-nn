@@ -1,0 +1,19 @@
+{"level":"error","message":"\"salllam\" is not a constructor"}
+{"level":"error","message":"\"salllam\" is not a constructor"}
+{"level":"error","message":"\"salllam\" is not a constructor"}
+{"level":"error","message":"allstar is a required field"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"FoodModel is not defined"}
+{"level":"error","message":"Cast to ObjectId failed for value \"id\" at path \"_id\" for model \"Proposal\""}
+{"level":"error","message":"Cast to ObjectId failed for value \"id\" at path \"_id\" for model \"Proposal\""}
+{"level":"error","message":"Cast to ObjectId failed for value \"63596e6b9beb9c0cc1b9110c,63596e6b9beb9c0cc1b9110c,63596e6b9beb9c0cc1b9110c,63596e6b9beb9c0cc1b9110c\" at path \"_id\" for model \"Proposal\""}
+{"level":"error","message":"i is not defined"}
+{"level":"error","message":"Unexpected token b in JSON at position 7"}
+{"level":"error","message":"ProposalModel is not defined"}
+{"level":"error","message":"ProposalModel is not defined"}
+{"level":"error","message":"ProposalModel is not defined"}
+{"level":"error","message":"ProposalModel is not defined"}
