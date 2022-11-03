@@ -17,3 +17,4 @@
 {"level":"error","message":"ProposalModel is not defined"}
 {"level":"error","message":"ProposalModel is not defined"}
 {"level":"error","message":"ProposalModel is not defined"}
+{"level":"error","message":"Cannot read properties of undefined (reading '0')"}
