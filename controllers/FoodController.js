@@ -1,3 +1,4 @@
+var fs = require('fs');
 const sharp = require("sharp");
 const appRoot = require("app-root-path");
 const { FoodModel } = require('../model/FoodModel');
@@ -271,10 +272,18 @@ function FoodController() {
 
   this.sendImageProfile = async (req, res) => {
       if (!req.user?.payload?.userId) return res.status(400).json('err')
-      await imageProfile.deleteMany({ user: req.user.payload.userId })
       const image = req.files.uri;
       if (!image) return res.status(400).json('err')
-      const uri = (new Date().getTime() + Math.random() * 10000).toString() + '.jpg';
+      let purl = await imageProfile.findOne({ user: req.user.payload.userId })
+      await imageProfile.deleteMany({ user: req.user.payload.userId })
+
+      console.log()
+
+      if(purl)
+      if (fs.existsSync(`${appRoot}/public/upload/profile/${purl.uri}`))
+      fs.unlinkSync(`${appRoot}/public/upload/profile/${purl.uri}`)
+
+      const uri = new Date().getTime() + req.user.payload.userId + `.${req.files.uri.mimetype.split('/')[1]}`
       await sharp(image.data).toFile(`${appRoot}/public/upload/profile/${uri}`)
       await new imageProfile({ uri: uri, user: req.user.payload.userId }).save()
 
