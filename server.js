@@ -39,7 +39,7 @@ app.use(Admin)
 
 app.use((req, res) => res.send("<h1 style='text-align:center;color:red; font-size:55px'> 404 </h1>"));
 
-const port = 80
+const port = 4000
 app.listen(port, (err) => { console.log(`App Listen to port ${port}`) })
 
 mongoose.connect(
